@@ -3,6 +3,8 @@ package com.asksven.batteryinfotest;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+import com.asksven.batteryinfotest.SystemAppInstaller.Status;
+
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -23,7 +25,8 @@ public class MainActivity extends Activity
 {
 
 	final static String TAG = "BetteryInfoTest.MainActivity";
-
+	final static String APK = "com.asksven.batteryinfotest";
+	
 	Object m_stats = null;
 
 	@Override
@@ -73,74 +76,29 @@ public class MainActivity extends Activity
 		{
 			public void onClick(View v)
 			{
+				Status status;
 				try
 				{
-					if (!SystemAppInstaller.isSystemApp())
+					if (!SystemAppInstaller.isSystemApp(APK))
 					{
-						SystemAppInstaller.mountSystemRw();
-						if (SystemAppInstaller.isSystemRw())
-						{
-							appendStatus("Mounted system rw");
-							SystemAppInstaller.installAsSystemApp();
-							appendStatus("Install as system app");
-							if (SystemAppInstaller.isSystemApp())
-							{
-								SystemAppInstaller.mountSystemRo();
-								if (!SystemAppInstaller.isSystemRw())
-								{
-									appendStatus("Mounted system ro. Finished");
-								}
-								else
-								{
-									appendStatus("An error while remounting system to ro. Aborted");
-								}
-							}
-							else
-							{
-								appendStatus("An error while installing app. Aborted");
-							}
-							
-						}
-						else
-						{
-							appendStatus("An error occured mounting system rw. Aborted");
-						}
-						
+						status = SystemAppInstaller.install(APK);
 					}
 					else
 					{
-						SystemAppInstaller.mountSystemRw();
-						if (SystemAppInstaller.isSystemRw())
-						{
-							appendStatus("Mounted system rw");
-							SystemAppInstaller.uninstallAsSystemApp();
-							appendStatus("Uninstall as system app");
-							if (!SystemAppInstaller.isSystemApp())
-							{
-								SystemAppInstaller.mountSystemRo();
-								if (!SystemAppInstaller.isSystemRw())
-								{
-									appendStatus("Mounted system ro. Finished");
-								}
-								else
-								{
-									appendStatus("An error while remounting system to ro. Aborted");
-								}
-							}
-							else
-							{
-								appendStatus("An error while uninstalling app. Aborted");
-							}	
-						}
-						else
-						{
-							appendStatus("An error occured mounting system rw. Aborted");
-						}
+						status = SystemAppInstaller.uninstall(APK);
 					}
 						
 					setButtonText(buttonRemount);
+					textStatus.setText(status.toString());
 				
-					Toast.makeText(MainActivity.this, "Succeeded", Toast.LENGTH_LONG).show();
+					if (status.m_success)
+					{
+						Toast.makeText(MainActivity.this, "Succeeded", Toast.LENGTH_LONG).show();
+					}
+					else
+					{
+						Toast.makeText(MainActivity.this, "Failed", Toast.LENGTH_LONG).show();
+					}						
 				}
 				catch (Exception e)
 				{
@@ -158,7 +116,7 @@ public class MainActivity extends Activity
 
 	void setButtonText(Button button)
 	{
-		if (SystemAppInstaller.isSystemApp())
+		if (SystemAppInstaller.isSystemApp(APK))
 		{
 			button.setText("Installed as system app");
 		}
@@ -166,15 +124,6 @@ public class MainActivity extends Activity
 		{
 			button.setText("Not installed as system app");
 		}
-	}
-	
-	void appendStatus(String text)
-	{
-		final EditText textStatus = (EditText) findViewById(R.id.editTextStatus);
-
-		String current = textStatus.getText().toString();
-		current += "\n" + text;
-		textStatus.setText(current);
 	}
 	
 	@Override
